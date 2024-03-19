@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QLabel
 from PyQt5.QtGui import QPainter, QPen, QPixmap, QColor
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal
-
+from itertools import cycle
 class DrawableLabel(QLabel):
     lineDrawn = pyqtSignal(list)  # Signal to emit average RGB data
 
@@ -10,7 +10,10 @@ class DrawableLabel(QLabel):
         self.originalPixmap = QPixmap()
         self.setMouseTracking(True)
         self.drawing = False
-        self.pathPoints = []  # To store the path points
+        self.pathPoints = []
+        self.lineColors = cycle([Qt.red, Qt.green, Qt.blue, Qt.yellow])  # Add more colors as needed
+        self.currentLineColor = next(self.lineColors)  # Initialize current line color
+  # To store the path points
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -83,14 +86,16 @@ class DrawableLabel(QLabel):
 
         # Draw the line after color extraction to avoid affecting the pixel colors
         painter = QPainter(self.originalPixmap)
-        painter.setPen(QPen(Qt.red, 3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.setPen(QPen(self.currentLineColor, 3, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         for i in range(1, len(self.pathPoints)):
             painter.drawLine(self.pathPoints[i - 1], self.pathPoints[i])
         self.update()  # Update the pixmap with the drawn line
 
         # Emit the averaged color data
         self.lineDrawn.emit(avg_color)
-
+        
+        # Update the current line color for the next drawn line
+        self.currentLineColor = next(self.lineColors)
     def setPixmap(self, pixmap):
         resizedPixmap = pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
         super().setPixmap(resizedPixmap)
@@ -100,3 +105,4 @@ class DrawableLabel(QLabel):
         painter = QPainter(self)
         painter.drawPixmap(self.rect(), self.originalPixmap)
         # Optionally, draw the pathPoints as visual feedback during drawing
+        
